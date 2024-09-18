@@ -108,7 +108,7 @@ function findPairs(type, arr, target) {
         // complementが存在し、かつ同じ数ではないかチェック
         if (seen.has(complement) && seen.get(complement) > 0) {
             // ペアとして格納
-            pairs.push([currentNum, complement]);
+            pairs.push(currentNum, complement);
             // 使用済みの数字として追加
             used.add(currentNum);
             used.add(complement);
@@ -120,9 +120,9 @@ function findPairs(type, arr, target) {
         }
     }
 
-    // ペアの順序を維持
     return pairs;
 }
+
 
 
 function isCalcType(targetSrc)
