@@ -30,27 +30,7 @@ function isFractionQuestion(block) {
 }
 
 function getFractionParts(block) {
-    let gTags = block.querySelectorAll("g");
-    let numerator = 0;
-    let denominator = 1;
-
-    gTags.forEach(g => {
-        if (g.getAttribute("data-mml-node") == "mn") {
-            let useTag = g.querySelector('use');
-            let dataC = useTag.getAttribute('data-c');
-            let value = Number(dataC.slice(-1));
-            
-            // 分子を取得
-            if (!numerator) {
-                numerator = value;
-            } else {
-                // 分母を取得
-                denominator = value;
-            }
-        }
-    });
-
-    return numerator / denominator;
+    
 }
 
 function getNumList() {
@@ -59,12 +39,8 @@ function getNumList() {
 
     touchableBlocks.forEach(block => {
         if (isFractionQuestion(block)) {
-            // 分数の場合は、分子と分母を取得
-            let fractionValue = getFractionParts(block);
-            blocksData.push(block);
-            blockNumData.push(fractionValue);
+            
         } else {
-            // 既存の整数・小数処理
             let useTags = block.querySelectorAll('use');
             let keta100, keta10, Num;
             let decimalPart = 0;
@@ -181,7 +157,6 @@ function findPairs(type, arr, target) {
                     if (currentNum - complement === target || complement - currentNum === target) {
                         pairs.push(currentNum, complement); // 順番にpush
                     }
-                    pairs.sort((a, b) => b - a);
                     break;
                 case "*":
                     if (currentNum * complement === target) {
@@ -194,6 +169,7 @@ function findPairs(type, arr, target) {
                     }
                     break;
                 default:
+                    pairs.sort((a, b) => b - a);
                     continue;
             }
 
@@ -204,6 +180,64 @@ function findPairs(type, arr, target) {
     }
 
     return pairs;
+}
+
+function findTriplets(type, arr, target) {
+    let triplets = [];
+    let used = new Set(); // 使用済みの数字を追跡するセット
+
+    for (let i = 0; i < arr.length - 2; i++) {
+        for (let j = i + 1; j < arr.length - 1; j++) {
+            for (let k = j + 1; k < arr.length; k++) {
+                let a = arr[i];
+                let b = arr[j];
+                let c = arr[k];
+
+                switch (type) {
+                    case "+":
+                        if (a + b + c === target) {
+                            let triplet = [a, b, c].sort((x, y) => x - y); // 順番にソート
+                            if (!triplets.some(t => JSON.stringify(t) === JSON.stringify(triplet))) {
+                                triplets.push(triplet); // 重複しない場合のみ追加
+                            }
+                        }
+                        break;
+                    case "-":
+                        if (a - b - c === target || b - a - c === target || c - a - b === target) {
+                            let triplet = [a, b, c].sort((x, y) => x - y); // 順番にソート
+                            if (!triplets.some(t => JSON.stringify(t) === JSON.stringify(triplet))) {
+                                triplets.push(triplet); // 重複しない場合のみ追加
+                            }
+                        }
+                        break;
+                    case "*":
+                        if (a * b * c === target) {
+                            let triplet = [a, b, c].sort((x, y) => x - y); // 順番にソート
+                            if (!triplets.some(t => JSON.stringify(t) === JSON.stringify(triplet))) {
+                                triplets.push(triplet); // 重複しない場合のみ追加
+                            }
+                        }
+                        break;
+                    case "/":
+                        if (
+                            (a / b / c === target && b !== 0 && c !== 0) ||
+                            (b / a / c === target && a !== 0 && c !== 0) ||
+                            (c / a / b === target && a !== 0 && b !== 0)
+                        ) {
+                            let triplet = [a, b, c].sort((x, y) => x - y); // 順番にソート
+                            if (!triplets.some(t => JSON.stringify(t) === JSON.stringify(triplet))) {
+                                triplets.push(triplet); // 重複しない場合のみ追加
+                            }
+                        }
+                        break;
+                    default:
+                        continue;
+                }
+            }
+        }
+    }
+
+    return triplets;
 }
 
 
@@ -231,17 +265,35 @@ function getCalcType() {
     }
 }
 
-setInterval(() => {
+function isTripleQuestion() {
+    let questionCount = document.getElementsByClassName("rest");
+    if (questionCount.innerText == "8")
+    {
+        return true
+    }
+
+    return false;
+}
+
+function click()
+{
     getNumList();
     getQuestionAnswer();
 
-    let pair = findPairs(getCalcType(), blockNumData, AnswerValue);
+    let pair = isTripleQuestion() ? findTriplets(getCalcType(), blockNumData, AnswerValue) : findPairs(getCalcType(), blockNumData, AnswerValue);
     console.log(pair);
+    console.log(blockNumData);
+    console.log(isTripleQuestion())
     pair.forEach((element, index) => {
         let pos = blockNumData.indexOf(element);
 
         setTimeout(() => {
             blocksData[pos].click();
-        }, index == 0 ? 1000 : 2000);
+        }, index == 0 ? 0 : 1000);
     });
-}, 5000);
+}
+
+click();
+setInterval(() => {
+    click();
+}, 4000);
