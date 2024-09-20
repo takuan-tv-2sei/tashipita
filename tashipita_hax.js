@@ -179,12 +179,17 @@ function findPairs(type, arr, target) {
         }
     }
 
+    pairs.sort(function(a,b){
+        if( a > b ) return -1;
+        if( a < b ) return 1;
+        return 0;
+    });
+
     return pairs;
 }
 
 function findTriplets(type, arr, target) {
     let triplets = [];
-    let used = new Set(); // 使用済みの数字を追跡するセット
 
     for (let i = 0; i < arr.length - 2; i++) {
         for (let j = i + 1; j < arr.length - 1; j++) {
@@ -196,26 +201,17 @@ function findTriplets(type, arr, target) {
                 switch (type) {
                     case "+":
                         if (a + b + c === target) {
-                            let triplet = [a, b, c].sort((x, y) => x - y); // 順番にソート
-                            if (!triplets.some(t => JSON.stringify(t) === JSON.stringify(triplet))) {
-                                triplets.push(triplet); // 重複しない場合のみ追加
-                            }
+                            triplets.push(a, b, c); // フラットに追加
                         }
                         break;
                     case "-":
                         if (a - b - c === target || b - a - c === target || c - a - b === target) {
-                            let triplet = [a, b, c].sort((x, y) => x - y); // 順番にソート
-                            if (!triplets.some(t => JSON.stringify(t) === JSON.stringify(triplet))) {
-                                triplets.push(triplet); // 重複しない場合のみ追加
-                            }
+                            triplets.push(a, b, c); // フラットに追加
                         }
                         break;
                     case "*":
                         if (a * b * c === target) {
-                            let triplet = [a, b, c].sort((x, y) => x - y); // 順番にソート
-                            if (!triplets.some(t => JSON.stringify(t) === JSON.stringify(triplet))) {
-                                triplets.push(triplet); // 重複しない場合のみ追加
-                            }
+                            triplets.push(a, b, c); // フラットに追加
                         }
                         break;
                     case "/":
@@ -224,10 +220,7 @@ function findTriplets(type, arr, target) {
                             (b / a / c === target && a !== 0 && c !== 0) ||
                             (c / a / b === target && a !== 0 && b !== 0)
                         ) {
-                            let triplet = [a, b, c].sort((x, y) => x - y); // 順番にソート
-                            if (!triplets.some(t => JSON.stringify(t) === JSON.stringify(triplet))) {
-                                triplets.push(triplet); // 重複しない場合のみ追加
-                            }
+                            triplets.push(a, b, c); // フラットに追加
                         }
                         break;
                     default:
@@ -237,7 +230,7 @@ function findTriplets(type, arr, target) {
         }
     }
 
-    return triplets;
+    return triplets; // フラットな配列を返す
 }
 
 
@@ -265,35 +258,26 @@ function getCalcType() {
     }
 }
 
-function isTripleQuestion() {
-    let questionCount = document.getElementsByClassName("rest");
-    if (questionCount.innerText == "8")
-    {
-        return true
-    }
-
-    return false;
-}
-
+let count = 0;
 function click()
 {
     getNumList();
     getQuestionAnswer();
 
-    let pair = isTripleQuestion() ? findTriplets(getCalcType(), blockNumData, AnswerValue) : findPairs(getCalcType(), blockNumData, AnswerValue);
+    let pair = count > 7 ? findTriplets(getCalcType(), blockNumData, AnswerValue) : findPairs(getCalcType(), blockNumData, AnswerValue);
     console.log(pair);
     console.log(blockNumData);
-    console.log(isTripleQuestion())
     pair.forEach((element, index) => {
         let pos = blockNumData.indexOf(element);
 
         setTimeout(() => {
             blocksData[pos].click();
-        }, index == 0 ? 0 : 1000);
+        }, index == 0 ? 0 : index == 1 ? 1000 : 2000);
     });
 }
 
 click();
 setInterval(() => {
+    count++;
     click();
 }, 4000);
