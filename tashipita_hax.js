@@ -4,33 +4,103 @@ let blockNumData = []
 let blocksData = []
 let AnswerValue = 0;
 
-function isFractionQuestion(block)
+function getTrimedNumber(useTag) {
+    return useTag.getAttribute('data-c').slice(-1);
+}
+
+let keta100, keta10;
+function getNumber(index, trimedNumber) {
+    let Num;
+    switch (index) {
+        case 0:
+            keta100 = Number(trimedNumber);
+            Num = keta100;
+            break;
+        case 1:
+            keta10 = Number(trimedNumber);
+            Num = keta100 * 10 + keta10;
+            break;
+        case 2:
+            Num = keta100 * 100 + keta10 * 10 + Number(trimedNumber);
+            break;
+    }
+
+    return Num;
+}
+
+
+function isFractionQuestion()
 {
-    let gTags = block.querySelectorAll("g")
+    let gTags = document.querySelectorAll("g")
     let isFrac = false
     gTags.forEach(g => {
         if(g.getAttribute("data-mml-node") == "mfrac")
         {
-            isFrac = true
+            if (g.closest('.block.touchable'))
+            {
+                isFrac = true
+            }
         }
     });
 
     return isFrac
 }
 
-function isFractionQuestion(block) {
+function getFraction(block) {
     let gTags = block.querySelectorAll("g");
-    let isFrac = false;
+    let fractionObject = [];
+
+    let fraction = [];
+    let denominator;
+    let numerator;
+
     gTags.forEach(g => {
-        if (g.getAttribute("data-mml-node") == "mfrac") {
-            isFrac = true;
+        if (g.getAttribute("data-mml-node") == "mrow") {
+            let mrow = g.querySelectorAll("g");
+            mrow.forEach(m => {
+                if(m.getAttribute("data-mml-node") == "mstyle") {
+                    fractionObject.push(g);
+                }
+            });
         }
     });
-    return isFrac;
+
+    fractionObject.forEach((f, index) => {
+        switch(index) {
+            case 0: // 分子
+                let useTagsNumerator = f.querySelectorAll("use");
+                useTagsNumerator.forEach((useTag, index) => {
+                    let trimedNumber = getTrimedNumber(useTag);
+                    let Num = getNumber(index, trimedNumber);
+                    numerator = Num;
+                });
+                break;
+            case 1: // 分母
+                let useTagsDenominator = f.querySelectorAll("use");
+                useTagsDenominator.forEach((useTag, index) => {
+                    let trimedNumber = getTrimedNumber(useTag);
+                    let Num = getNumber(index, trimedNumber);
+                    denominator = Num;
+                });
+                break;
+        }
+    });
+
+
+    console.log("Fraction: " + numerator + "/" + denominator);
+
+    fraction.push(numerator, denominator);
+    return fraction;
 }
 
-function getFractionParts(block) {
-    
+function truncateDecimals(array) {
+    return array.map(num => {
+        if (Number.isInteger(num)) {
+            return num;
+        } else {
+            return Math.floor(num * 100) / 100;
+        }
+    });
 }
 
 function getNumList() {
@@ -38,36 +108,29 @@ function getNumList() {
     blocksData = [];
 
     touchableBlocks.forEach(block => {
-        if (isFractionQuestion(block)) {
-            
+        let Num;
+
+        if (isFractionQuestion()) {
+            let fraction = getFraction(block);
+            Num = fraction;
         } else {
             let useTags = block.querySelectorAll('use');
-            let keta100, keta10, Num;
+
+
+            
             let decimalPart = 0;
             let decimalDigits = [];
             let isDecimal = false;
 
             useTags.forEach((useTag, index) => {
-                let dataC = useTag.getAttribute('data-c');
-                let trimedNumber = dataC.slice(-1);
+                let trimedNumber = getTrimedNumber(useTag);
+                let dataC = useTag.getAttribute('data-c')
 
                 if (dataC === "2E") {
                     isDecimal = true;
                 } else {
                     if (!isDecimal) {
-                        switch (index) {
-                            case 0:
-                                keta100 = Number(trimedNumber);
-                                Num = keta100;
-                                break;
-                            case 1:
-                                keta10 = Number(trimedNumber);
-                                Num = keta100 * 10 + keta10;
-                                break;
-                            case 2:
-                                Num = keta100 * 100 + keta10 * 10 + Number(trimedNumber);
-                                break;
-                        }
+                        Num = getNumber(index, trimedNumber);
                     } else {
                         if (decimalDigits.length < 2) {
                             decimalDigits.push(Number(trimedNumber));
@@ -82,9 +145,11 @@ function getNumList() {
                 Num = Num + decimalPart;
             }
 
-            blocksData.push(block);
-            blockNumData.push(Num);
+            truncateDecimals([Num]);
         }
+
+        blockNumData.push(Num);
+        blocksData.push(block);
     });
 }
 
@@ -92,34 +157,24 @@ function getNumList() {
 function getQuestionAnswer() {
     question_answer.forEach(element => {
         let useTags = element.querySelectorAll("use");
-        let keta100, keta10, Num;
+        let Num;
         let decimalPart = 0;
         let decimalDigits = [];
         let isDecimal = false;
+        
 
         useTags.forEach((useTag, index) => {
-            let dataC = useTag.getAttribute('data-c');
-            let trimedNumber = dataC.slice(-1);
+            let trimedNumber = getTrimedNumber(useTag);
+            let dataC = useTag.getAttribute('data-c')
 
             if (dataC === "2E") {
                 isDecimal = true;
             } else {
                 if (!isDecimal) {
-                    switch (index) {
-                        case 0:
-                            keta100 = Number(trimedNumber);
-                            Num = keta100;
-                            break;
-                        case 1:
-                            keta10 = Number(trimedNumber);
-                            Num = keta100 * 10 + keta10;
-                            break;
-                        case 2:
-                            Num = keta100 * 100 + keta10 * 10 + Number(trimedNumber);
-                            break;
-                    }
+                    Num = getNumber(index, trimedNumber);
                 } else {
                     if (decimalDigits.length < 2) {
+
                         decimalDigits.push(Number(trimedNumber));
                     }
                 }
@@ -141,35 +196,50 @@ function findPairs(type, arr, target) {
     let pairs = [];
     let used = new Set(); // 使用済みの数字を追跡するセット
 
-    for (let i = 0; i < arr.length; i++) {
-        let currentNum = arr[i];
+    let numbers = arr;
+    let answer = target;
 
-        for (let j = i + 1; j < arr.length; j++) {
-            let complement = arr[j];
+    if (isFractionQuestion()) {
+        arr.forEach(element => {
+            answer = target * element[1];
+        });
+
+        let denominator = arr[0][1];
+        numbers = arr.flat().filter(item => item !== denominator);
+
+        blockNumData = numbers;
+    }
+
+    for (let i = 0; i < numbers.length; i++) {
+
+        let currentNum = numbers[i];
+
+        for (let j = i + 1; j < numbers.length; j++) {
+            let complement = numbers[j];
 
             switch (type) {
                 case "+":
-                    if (currentNum + complement === target) {
+                    if (currentNum + complement === answer) {
                         pairs.push(currentNum, complement); // 順番にpush
                     }
+
                     break;
                 case "-":
-                    if (currentNum - complement === target || complement - currentNum === target) {
+                    if (currentNum - complement === answer || complement - currentNum === answer) {
                         pairs.push(currentNum, complement); // 順番にpush
                     }
                     break;
                 case "*":
-                    if (currentNum * complement === target) {
+                    if (currentNum * complement === answer) {
                         pairs.push(currentNum, complement); // 順番にpush
                     }
                     break;
                 case "/":
-                    if ((currentNum / complement === target || complement / currentNum === target) && complement !== 0 && currentNum !== 0) {
+                    if ((currentNum / complement === answer || complement / currentNum === answer) && complement !== 0 && currentNum !== 0) {
                         pairs.push(currentNum, complement); // 順番にpush
                     }
                     break;
                 default:
-                    pairs.sort((a, b) => b - a);
                     continue;
             }
 
@@ -265,14 +335,18 @@ function click()
     getQuestionAnswer();
 
     let pair = count > 7 ? findTriplets(getCalcType(), blockNumData, AnswerValue) : findPairs(getCalcType(), blockNumData, AnswerValue);
-    console.log(pair);
-    console.log(blockNumData);
+    
+    console.log("Got Numbers: " + blockNumData);
+    console.log("Answer Pairs: " + pair);
+
     pair.forEach((element, index) => {
         let pos = blockNumData.indexOf(element);
 
         setTimeout(() => {
+            console.log(pos)
             blocksData[pos].click();
-        }, index == 0 ? 0 : index == 1 ? 1000 : 2000);
+        }, index == 0 ? 0 : index == 1 ? 500 : 1000);
+
     });
 }
 
@@ -280,4 +354,4 @@ click();
 setInterval(() => {
     count++;
     click();
-}, 4000);
+}, 3000);
